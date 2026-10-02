@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engineering Knowledge Agent: Architecture Board</title>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root{
+    color-scheme: light dark;
+    --bg:#f6f7fb; --surface:#ffffff; --surface-2:#f0f2f9; --ink:#171b2e; --ink-2:#4a516c; --ink-3:#7b829c; --line:#dfe2ee;
+    --shadow:0 1px 2px rgba(23,27,46,.06),0 4px 16px rgba(23,27,46,.05);
+    /* one colour per layer, reused in every diagram */
+    --ui:#2f6bff; --api:#0e9aae; --agent:#7a4dff; --svc:#12a36a; --dom:#d98200; --data:#d6393b; --ext:#6b7391;
+    --radius:14px; --gap:20px;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "Cascadia Code", Consolas, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1220; --surface:#171b2e; --surface-2:#1e2338; --ink:#eceffa; --ink-2:#b4bad3; --ink-3:#848bab; --line:#2c3350;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.25);
+      --ui:#6b94ff; --api:#37c2d4; --agent:#a183ff; --svc:#3cc790; --dom:#f0a53a; --data:#ff6b6d; --ext:#98a0bf;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1220; --surface:#171b2e; --surface-2:#1e2338; --ink:#eceffa; --ink-2:#b4bad3; --ink-3:#848bab; --line:#2c3350;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.25);
+    --ui:#6b94ff; --api:#37c2d4; --agent:#a183ff; --svc:#3cc790; --dom:#f0a53a; --data:#ff6b6d; --ext:#98a0bf;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:76px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  :focus-visible{outline:3px solid var(--ui);outline-offset:2px;border-radius:6px}
+
+  /* ---------- Top bar ---------- */
+  .top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .top-in{max-width:1280px;margin:auto;padding:10px 24px;display:flex;gap:16px;align-items:center}
+  .brand{font-weight:700;white-space:nowrap}
+  .brand i{font-style:normal;color:var(--ui)}
+  nav{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  nav a{white-space:nowrap;text-decoration:none;font-size:13px;color:var(--ink-2);padding:6px 10px;border-radius:8px}
+  nav a:hover{background:var(--surface-2)}
+  nav a.on{background:var(--ink);color:var(--bg)}
+  .theme{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
+
+  /* ---------- Layout ---------- */
+  main{max-width:1280px;margin:auto;padding:28px 24px 64px}
+  .hero{margin-bottom:28px}
+  .hero h1{margin:0 0 6px;font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em}
+  .hero p{margin:0;color:var(--ink-2);max-width:760px;font-size:16px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+  .chip::before{content:"";width:9px;height:9px;border-radius:3px;background:var(--c,var(--ink-3))}
+
+  section.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:var(--gap)}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .num{font:700 12px var(--mono);color:var(--bg);background:var(--ink);border-radius:6px;padding:2px 8px}
+  h2{margin:0;font-size:20px;letter-spacing:-.01em}
+  .lede{margin:0 0 18px;color:var(--ink-2);max-width:820px}
+  h3{margin:0 0 8px;font-size:14px}
+  .grid{display:grid;gap:var(--gap)}
+  .g2{grid-template-columns:1.1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g5{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:980px){.g2,.g3{grid-template-columns:1fr}.g5{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.g5{grid-template-columns:1fr}main{padding:20px 16px 48px}.top-in{padding:10px 16px}}
+
+  /* ---------- Feature tiles (section 1) ---------- */
+  .tile{border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:14px;background:var(--surface-2)}
+  .tile b{display:block;margin-bottom:4px}
+  .tile p{margin:0;font-size:13px;color:var(--ink-2)}
+
+  /* ---------- Diagrams ---------- */
+  .diagram{width:100%;height:auto;display:block}
+  @media(max-width:760px){section.card{overflow-x:auto}.diagram{min-width:720px}}
+  .diagram text{font-family:var(--font);fill:var(--ink)}
+  .t-sub{font-size:11.5px;fill:var(--ink-2)!important}
+  .t-title{font-size:13.5px;font-weight:650}
+  .node rect{fill:color-mix(in srgb,var(--c) 11%,var(--surface));stroke:var(--c);stroke-width:1.6}
+  .node .bar{fill:var(--c);stroke:none}
+  .edge{stroke:var(--ink-3);stroke-width:1.6;fill:none}
+  .edge.dash{stroke-dasharray:5 4}
+  .edge-label{font-size:11px;fill:var(--ink-3)!important}
+  .zone{fill:none;stroke:var(--line);stroke-width:1.4;stroke-dasharray:4 5}
+  .zone-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;fill:var(--ink-3)!important}
+
+  .callout{margin-top:16px;padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--dom) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--dom) 45%,var(--line));font-size:13.5px}
+  .callout.ok{background:color-mix(in srgb,var(--svc) 11%,var(--surface));border-color:color-mix(in srgb,var(--svc) 45%,var(--line))}
+
+  /* ---------- Code ---------- */
+  pre{margin:0;background:#12162a;color:#e6e9f7;border-radius:12px;padding:16px 18px;overflow:auto;font:12.5px/1.65 var(--mono)}
+  pre .c{color:#8b93b8}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+
+  /* ---------- Tables ---------- */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  th{background:var(--surface-2);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)}
+  tr:last-child td{border-bottom:none}
+  td:first-child{white-space:nowrap}
+  .pill{display:inline-block;font-size:12px;padding:1px 9px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);margin:2px 4px 2px 0}
+  .pill.yes{background:color-mix(in srgb,var(--svc) 16%,var(--surface));border-color:var(--svc)}
+  .pill.no{background:color-mix(in srgb,var(--data) 12%,var(--surface));border-color:var(--data)}
+  .pill.mid{background:color-mix(in srgb,var(--dom) 16%,var(--surface));border-color:var(--dom)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .tags span{font-size:12.5px;padding:4px 10px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line)}
+
+  /* ---------- Stepper (write flow) ---------- */
+  .steps{list-style:none;margin:0;padding:0;display:grid;gap:0}
+  .steps li{display:grid;grid-template-columns:36px 1fr;gap:14px;padding-bottom:18px;position:relative}
+  .steps li:not(:last-child)::before{content:"";position:absolute;left:17px;top:36px;bottom:0;width:2px;background:var(--line)}
+  .steps .n{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;background:var(--c)}
+  .steps b{display:block}
+  .steps p{margin:2px 0 0;font-size:13.5px;color:var(--ink-2)}
+
+  /* ---------- ER legend ---------- */
+  .er-legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12.5px;color:var(--ink-2)}
+  .er-legend b{color:var(--ink)}
+  .enum{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:14px}
+  .enum div{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+  .enum code{background:transparent;padding:0;color:var(--ink-2)}
+
+  footer{color:var(--ink-3);font-size:13px;text-align:center;margin-top:30px}
+  @media print{.top{display:none}section.card{break-inside:avoid;box-shadow:none}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><i>◆</i> Engineering Knowledge Agent</div>
+    <nav aria-label="Sections">
+      <a href="#product">Product</a><a href="#system">System</a><a href="#code">Code</a><a href="#data">Database</a>
+      <a href="#agents">Agents</a><a href="#flow">Write flow</a><a href="#rules">Rules</a><a href="#workflow">Workflow</a><a href="#deploy">Deploy</a>
+    </nav>
+    <button class="theme" id="theme" type="button" aria-label="Toggle light or dark theme">Theme</button>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Architecture board</h1>
+    <p>A knowledge system for Requirements, Test Cases and Risk Items. Users ask questions in plain English; agents answer only from the database and can only <em>propose</em> changes that a human confirms.</p>
+    <div class="legend" aria-label="Colour legend">
+      <span class="chip" style="--c:var(--ui)">Frontend</span>
+      <span class="chip" style="--c:var(--api)">API</span>
+      <span class="chip" style="--c:var(--agent)">Agents</span>
+      <span class="chip" style="--c:var(--svc)">Services</span>
+      <span class="chip" style="--c:var(--dom)">Domain rules</span>
+      <span class="chip" style="--c:var(--data)">Data</span>
+      <span class="chip" style="--c:var(--ext)">External</span>
+    </div>
+  </div>
+
+  <!-- 1 PRODUCT -->
+  <section class="card" id="product">
+    <div class="sec-head"><span class="num">01</span><h2>Product structure</h2></div>
+    <p class="lede">Five screens, each answering one user question.</p>
+    <div class="grid g5">
+      <div class="tile" style="--c:var(--ui)"><b>Chat</b><p>“Which requirements have no test cases?” Answer plus the evidence records and tool trace.</p></div>
+      <div class="tile" style="--c:var(--svc)"><b>Browse</b><p>Requirements, test cases and risks with filters such as high risk.</p></div>
+      <div class="tile" style="--c:var(--dom)"><b>Pending changes</b><p>A proposed update shown as a diff. Confirm or reject.</p></div>
+      <div class="tile" style="--c:var(--agent)"><b>Impact report</b><p>After a change: which tests and risks are affected.</p></div>
+      <div class="tile" style="--c:var(--data)"><b>Audit log</b><p>Append-only history of every modification.</p></div>
+    </div>
+  </section>
+
+  <!-- 2 SYSTEM -->
+  <section class="card" id="system">
+    <div class="sec-head"><span class="num">02</span><h2>System architecture</h2></div>
+    <p class="lede">Layers depend inward. Agents never touch the database: they go through services, which enforce every rule.</p>
+    <svg class="diagram" viewBox="0 0 980 470" role="img" aria-label="Layered system architecture diagram">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ink-3)"/></marker></defs>
+      <rect class="zone" x="10" y="10" width="650" height="450" rx="14"/><text class="zone-label" x="26" y="32">Our system</text>
+      <rect class="zone" x="700" y="196" width="270" height="110" rx="14"/><text class="zone-label" x="716" y="218">External</text>
+
+      <g class="node" style="--c:var(--ui)"><rect x="40" y="46" width="590" height="56" rx="10"/><rect class="bar" x="40" y="46" width="6" height="56" rx="3"/>
+        <text class="t-title" x="62" y="70">React + Vite + TypeScript</text><text class="t-sub" x="62" y="88">Chat, Browse, Pending changes, Impact, Audit. Hosted on Vercel.</text></g>
+      <path class="edge" d="M335 102V128" marker-end="url(#ah)"/><text class="edge-label" x="346" y="120">HTTPS · JSON</text>
+
+      <g class="node" style="--c:var(--api)"><rect x="40" y="130" width="590" height="56" rx="10"/><rect class="bar" x="40" y="130" width="6" height="56" rx="3"/>
+        <text class="t-title" x="62" y="154">FastAPI routers · api/</text><text class="t-sub" x="62" y="172">HTTP only. Validates input, maps domain errors to 404 / 409 / 422.</text></g>
+      <path class="edge" d="M185 186V214" marker-end="url(#ah)"/><path class="edge" d="M485 186V214" marker-end="url(#ah)"/>
+
+      <g class="node" style="--c:var(--svc)"><rect x="40" y="216" width="290" height="70" rx="10"/><rect class="bar" x="40" y="216" width="6" height="70" rx="3"/>
+        <text class="t-title" x="62" y="240">Services · services/</text><text class="t-sub" x="62" y="258">Use cases, transactions, audit write,</text><text class="t-sub" x="62" y="274">impact workflow.</text></g>
+      <g class="node" style="--c:var(--agent)"><rect x="340" y="216" width="290" height="70" rx="10"/><rect class="bar" x="340" y="216" width="6" height="70" rx="3"/>
+        <text class="t-title" x="362" y="240">Agent layer · agents/</text><text class="t-sub" x="362" y="258">Router, Query, Update, Analysis.</text><text class="t-sub" x="362" y="274">Tools are thin adapters over services.</text></g>
+      <path class="edge" d="M340 251H332" marker-end="url(#ah)"/><text class="edge-label" x="335" y="304" text-anchor="middle">agents reach data only through services</text>
+      <path class="edge" d="M185 286V318" marker-end="url(#ah)"/>
+
+      <g class="node" style="--c:var(--dom)"><rect x="40" y="320" width="590" height="56" rx="10"/><rect class="bar" x="40" y="320" width="6" height="56" rx="3"/>
+        <text class="t-title" x="62" y="344">Domain rules · domain/</text><text class="t-sub" x="62" y="362">Pure Python. ID formats, status state machine, risk scoring. No I/O, so tests run in milliseconds.</text></g>
+      <path class="edge" d="M335 376V400" marker-end="url(#ah)"/>
+      <g class="node" style="--c:var(--data)"><rect x="40" y="402" width="590" height="46" rx="10"/><rect class="bar" x="40" y="402" width="6" height="46" rx="3"/>
+        <text class="t-title" x="62" y="422">Repositories → SQLAlchemy → SQLite</text><text class="t-sub" x="62" y="438">All SQL lives here. Alembic migrations version the schema.</text></g>
+
+      <g class="node" style="--c:var(--ext)"><rect x="720" y="226" width="230" height="64" rx="10"/><rect class="bar" x="720" y="226" width="6" height="64" rx="3"/>
+        <text class="t-title" x="742" y="252">OpenAI API</text><text class="t-sub" x="742" y="270">Tool calling, temperature 0</text></g>
+      <path class="edge dash" d="M630 258H718" marker-end="url(#ah)"/><text class="edge-label" x="674" y="250" text-anchor="middle">messages + tools</text>
+    </svg>
+    <div class="callout"><b>Rule of the architecture:</b> the LLM chooses a tool and fills its arguments; code executes it. Even a fully misled model can only call read tools or <em>propose</em> a change.</div>
+  </section>
+
+  <!-- 3 CODE -->
+  <section class="card" id="code">
+    <div class="sec-head"><span class="num">03</span><h2>Code structure</h2></div>
+    <p class="lede">One folder per layer. To change a rule you open one file; to change storage you open one folder.</p>
+    <div class="grid g2">
+<pre><span class="c"># repository root</span>
+AI_Tri9T_Agent/
+├─ backend/
+│  ├─ app/
+│  │  ├─ api/            <span class="c"># routes, schemas, error handlers</span>
+│  │  ├─ agents/         <span class="c"># router, agents, tools, llm, prompts/</span>
+│  │  ├─ services/       <span class="c"># propose/confirm, impact, audit</span>
+│  │  ├─ repositories/   <span class="c"># all SQL</span>
+│  │  ├─ domain/         <span class="c"># enums, ids, transitions, risk</span>
+│  │  ├─ db/             <span class="c"># models, session, seed</span>
+│  │  └─ core/           <span class="c"># env-based config</span>
+│  ├─ migrations/        <span class="c"># Alembic</span>
+│  ├─ data/              <span class="c"># seed_raw.json, gen_seed.py</span>
+│  ├─ tests/             <span class="c"># unit · integration · agents</span>
+│  └─ Dockerfile
+├─ frontend/  src/{api,components,pages}  Dockerfile
+├─ .github/workflows/ci.yml
+├─ docker-compose.yml
+└─ README.md</pre>
+      <div>
+        <h3>Where do I change…?</h3>
+        <div class="table-wrap"><table>
+          <tr><th>Change</th><th>Open</th></tr>
+          <tr><td>A business rule</td><td><code>domain/</code></td></tr>
+          <tr><td>A database field</td><td><code>db/models.py</code> + migration</td></tr>
+          <tr><td>What the agent can do</td><td><code>agents/tools.py</code></td></tr>
+          <tr><td>How the agent talks</td><td><code>agents/prompts/</code></td></tr>
+          <tr><td>An endpoint</td><td><code>api/</code> → <code>services/</code></td></tr>
+          <tr><td>The look of the UI</td><td><code>frontend/src/</code></td></tr>
+          <tr><td>The dummy data</td><td><code>data/gen_seed.py</code></td></tr>
+        </table></div>
+        <div class="callout ok"><b>Import rule:</b> <code>agents</code> may import <code>services</code> only. Never <code>repositories</code> or <code>db</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 DATABASE -->
+  <section class="card" id="data">
+    <div class="sec-head"><span class="num">04</span><h2>Database design</h2></div>
+    <p class="lede">SQLite with foreign keys on and <code>ON DELETE RESTRICT</code> everywhere. Risk score and level are derived in code, never stored.</p>
+    <svg id="er" class="diagram" viewBox="0 0 1000 520" role="img" aria-label="Entity relationship diagram"></svg>
+    <div class="er-legend">
+      <span><b>PK</b> primary key</span><span><b>FK</b> foreign key</span><span><b>1 / N</b> one-to-many</span><span><b>dashed</b> loose reference by type + id</span>
+    </div>
+    <div class="enum">
+      <div><b>priority</b><br><code>low · medium · high · critical</code></div>
+      <div><b>requirement status</b><br><code>draft → approved → implemented → verified · obsolete</code></div>
+      <div><b>test status</b><br><code>not_run · pass · fail · blocked</code></div>
+      <div><b>risk status</b><br><code>open · mitigated · accepted · closed</code></div>
+      <div><b>risk level</b><br><code>score = severity × likelihood: ≥15 high · 8-14 medium · &lt;8 low</code></div>
+      <div><b>indexes</b><br><code>test_cases(requirement_id) · requirement_risks(risk_id) · audit_log(entity_type, entity_id)</code></div>
+    </div>
+  </section>
+
+  <!-- 5 AGENTS -->
+  <section class="card" id="agents">
+    <div class="sec-head"><span class="num">05</span><h2>Agent architecture</h2></div>
+    <p class="lede">An orchestrator routes each message to a specialist. Fixed, inspectable control flow beats a free-roaming swarm when the system guards data.</p>
+    <svg class="diagram" viewBox="0 0 1000 250" role="img" aria-label="Agent request flow">
+      <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ink-3)"/></marker></defs>
+      <g class="node" style="--c:var(--ui)"><rect x="10" y="60" width="130" height="64" rx="10"/><text class="t-title" x="26" y="88">User message</text><text class="t-sub" x="26" y="106">from the chat UI</text></g>
+      <path class="edge" d="M140 92H168" marker-end="url(#ah2)"/>
+      <g class="node" style="--c:var(--agent)"><rect x="170" y="60" width="150" height="64" rx="10"/><text class="t-title" x="186" y="88">Router</text><text class="t-sub" x="186" y="106">rules first, LLM fallback</text></g>
+      <path class="edge" d="M320 92H348" marker-end="url(#ah2)"/>
+      <g class="node" style="--c:var(--agent)"><rect x="350" y="20" width="170" height="44" rx="10"/><text class="t-title" x="366" y="48">Query agent</text></g>
+      <g class="node" style="--c:var(--agent)"><rect x="350" y="76" width="170" height="44" rx="10"/><text class="t-title" x="366" y="104">Update agent</text></g>
+      <g class="node" style="--c:var(--agent)"><rect x="350" y="132" width="170" height="44" rx="10"/><text class="t-title" x="366" y="160">Analysis agent</text></g>
+      <path class="edge" d="M320 92C335 92 335 42 348 42" marker-end="url(#ah2)"/><path class="edge" d="M320 92C335 92 335 154 348 154" marker-end="url(#ah2)"/>
+      <path class="edge" d="M520 98H548" marker-end="url(#ah2)"/>
+      <g class="node" style="--c:var(--svc)"><rect x="550" y="60" width="140" height="64" rx="10"/><text class="t-title" x="566" y="88">Typed tools</text><text class="t-sub" x="566" y="106">validated arguments</text></g>
+      <path class="edge" d="M690 92H718" marker-end="url(#ah2)"/>
+      <g class="node" style="--c:var(--svc)"><rect x="720" y="60" width="120" height="64" rx="10"/><text class="t-title" x="736" y="88">Services</text><text class="t-sub" x="736" y="106">rules + audit</text></g>
+      <path class="edge" d="M840 92H868" marker-end="url(#ah2)"/>
+      <g class="node" style="--c:var(--data)"><rect x="870" y="60" width="120" height="64" rx="10"/><text class="t-title" x="886" y="88">Database</text><text class="t-sub" x="886" y="106">source of truth</text></g>
+      <g class="node" style="--c:var(--ext)"><rect x="350" y="196" width="170" height="40" rx="10"/><text class="t-title" x="366" y="221">OpenAI (LLM)</text></g>
+      <path class="edge dash" d="M435 176V194" marker-end="url(#ah2)"/>
+      <g class="node" style="--c:var(--agent)"><rect x="560" y="176" width="430" height="60" rx="10"/><text class="t-title" x="576" y="200">Responder</text><text class="t-sub" x="576" y="218">builds { answer, records[], tool_calls[] } from tool output only</text></g>
+      <path class="edge dash" d="M620 124V174" marker-end="url(#ah2)"/>
+    </svg>
+
+    <div class="table-wrap" style="margin-top:18px"><table>
+      <tr><th>Agent</th><th>Tools</th><th>Write access</th></tr>
+      <tr><td><b>Query</b></td><td><code>get_requirement</code> <code>get_test_cases_for_requirement</code> <code>list_risks(level)</code> <code>list_requirements_without_tests</code> <code>search_text</code></td><td><span class="pill no">None</span></td></tr>
+      <tr><td><b>Update</b></td><td><code>propose_requirement_change</code></td><td><span class="pill mid">Creates a pending change only</span></td></tr>
+      <tr><td><b>Analysis</b></td><td><code>get_impact(requirement_id)</code></td><td><span class="pill no">None</span> Summarises a deterministic report</td></tr>
+      <tr><td><b>Responder</b></td><td>No tools</td><td><span class="pill no">None</span></td></tr>
+    </table></div>
+    <h3 style="margin-top:18px">Guardrails inside the agents</h3>
+    <div class="tags"><span>Grounding check: every cited ID must be in records</span><span>Tool output treated as untrusted data</span><span>Max 4 tool rounds</span><span>Token and time caps</span><span>Temperature 0</span><span>No delete tool exists</span><span>Prompts versioned in files</span></div>
+  </section>
+
+  <!-- 6 WRITE FLOW -->
+  <section class="card" id="flow">
+    <div class="sec-head"><span class="num">06</span><h2>Write flow and impact workflow</h2></div>
+    <p class="lede">Nothing changes until a human confirms. Applying a change triggers the automated impact analysis in the same transaction.</p>
+    <div class="grid g2">
+      <ol class="steps">
+        <li style="--c:var(--ui)"><span class="n">1</span><div><b>Propose</b><p>Agent or user creates a pending change with <code>base_version</code> and a diff preview. Nothing is applied.</p></div></li>
+        <li style="--c:var(--dom)"><span class="n">2</span><div><b>Confirm</b><p>One transaction: version must still match (else 409), rules validated, change applied, version bumped.</p></div></li>
+        <li style="--c:var(--agent)"><span class="n">3</span><div><b>Impact analysis</b><p>Find linked test cases (pass → not_run) and risks (flag for review). Save the report.</p></div></li>
+        <li style="--c:var(--data)"><span class="n">4</span><div><b>Audit entry</b><p>Old and new values, actor, source and request id, committed with the change.</p></div></li>
+        <li style="--c:var(--svc)"><span class="n">5</span><div><b>Summary</b><p>After commit, the LLM phrases the report in three sentences. It never decides the impact.</p></div></li>
+      </ol>
+      <div>
+        <h3>Why this design</h3>
+        <div class="callout ok" style="margin-top:0"><b>Human in the loop.</b> The agent has no apply tool, so a wrong guess costs a rejected proposal, not corrupted data.</div>
+        <div class="callout ok"><b>Atomic.</b> Change, impact and audit commit together or not at all.</div>
+        <div class="callout ok"><b>Idempotent.</b> Confirming the same change twice does nothing the second time.</div>
+        <div class="callout"><b>Example:</b> Changing REQ-009 (metering accuracy) resets its 4 test cases to not_run and flags RISK-003 (inaccurate billing) for review.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 RULES -->
+  <section class="card" id="rules">
+    <div class="sec-head"><span class="num">07</span><h2>Rules and validations</h2></div>
+    <p class="lede">The same rule is checked in more than one layer, so one mistake never corrupts data.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Layer</th><th>Rules enforced</th></tr>
+      <tr><td><b style="color:var(--data)">Database</b></td><td>Unique primary keys · foreign keys · CHECK on enums and 1-5 ranges · NOT NULL · append-only audit triggers</td></tr>
+      <tr><td><b style="color:var(--dom)">Domain</b></td><td>ID formats <code>REQ-###</code> <code>TC-###</code> <code>RISK-###</code> · status state machine (obsolete is final) · risk score and level</td></tr>
+      <tr><td><b style="color:var(--svc)">Service</b></td><td>Referenced records must exist · version must match · idempotent confirm · audit in the same transaction · rollback on failure</td></tr>
+      <tr><td><b style="color:var(--agent)">Agent</b></td><td>Read or propose only · grounding check · loop and token caps · confirmation required to apply</td></tr>
+      <tr><td><b style="color:var(--ext)">Seed pipeline</b></td><td>Every generated row validated by the same rules · bad rows reported and skipped</td></tr>
+    </table></div>
+  </section>
+
+  <!-- 8 WORKFLOW -->
+  <section class="card" id="workflow">
+    <div class="sec-head"><span class="num">08</span><h2>Development workflow</h2></div>
+    <p class="lede">Never work on main. Branch, commit, open a PR, let CI pass, merge.</p>
+    <div class="grid g2">
+      <svg class="diagram" viewBox="0 0 640 230" role="img" aria-label="Git branching model">
+        <g font-size="12">
+          <line x1="30" y1="40" x2="610" y2="40" stroke="var(--ui)" stroke-width="3"/>
+          <line x1="30" y1="110" x2="610" y2="110" stroke="var(--svc)" stroke-width="3"/>
+          <text x="30" y="26" class="t-title">main <tspan class="t-sub">(PR only, tagged)</tspan></text>
+          <text x="30" y="96" class="t-title">develop</text>
+          <circle cx="40" cy="40" r="6" fill="var(--ui)"/><circle cx="600" cy="40" r="7" fill="var(--ui)"/>
+          <circle cx="40" cy="110" r="6" fill="var(--svc)"/>
+          <path d="M40 110C100 110 90 175 150 175H250C300 175 290 110 330 110" fill="none" stroke="var(--agent)" stroke-width="2.5"/>
+          <circle cx="150" cy="175" r="5" fill="var(--agent)"/><circle cx="200" cy="175" r="5" fill="var(--agent)"/><circle cx="250" cy="175" r="5" fill="var(--agent)"/>
+          <circle cx="330" cy="110" r="6" fill="var(--svc)"/>
+          <text x="130" y="205" class="t-sub">feature/database  →  PR</text>
+          <path d="M330 110C390 110 380 175 440 175H500C540 175 530 110 560 110" fill="none" stroke="var(--dom)" stroke-width="2.5"/>
+          <circle cx="440" cy="175" r="5" fill="var(--dom)"/><circle cx="500" cy="175" r="5" fill="var(--dom)"/>
+          <circle cx="560" cy="110" r="6" fill="var(--svc)"/>
+          <text x="410" y="205" class="t-sub">feature/agents  →  PR</text>
+          <path d="M560 110C590 110 590 40 600 40" fill="none" stroke="var(--ui)" stroke-width="2.5" stroke-dasharray="5 4"/>
+          <text x="470" y="62" class="t-sub">develop → main (PR) · v1.0</text>
+        </g>
+      </svg>
+      <div>
+        <h3>Branches</h3>
+        <div class="tags" style="margin-top:0"><span>main</span><span>develop</span><span>feature/database</span><span>feature/domain-rules</span><span>feature/services-audit</span><span>feature/agents</span><span>feature/impact-workflow</span><span>feature/frontend</span><span>feature/docker</span><span>feature/ci</span><span>feature/deploy</span><span>docs/readme</span></div>
+        <h3 style="margin-top:16px">Every PR</h3>
+        <div class="tags" style="margin-top:0"><span>Small commits · <code>feat:</code> <code>fix:</code> <code>test:</code> <code>docs:</code></span><span>ruff lint</span><span>pytest (fake LLM, no key)</span><span>frontend build</span><span>No secrets committed</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 DEPLOY -->
+  <section class="card" id="deploy">
+    <div class="sec-head"><span class="num">09</span><h2>Deployment and tech stack</h2></div>
+    <p class="lede">Free hosting, same Docker image locally and in the cloud.</p>
+    <div class="grid g3">
+      <div class="tile" style="--c:var(--ui)"><b>Vercel (free)</b><p>React static build. Env: <code>VITE_API_URL</code></p></div>
+      <div class="tile" style="--c:var(--svc)"><b>Render (free, Docker)</b><p>FastAPI container. Env: <code>OPENAI_API_KEY</code>, <code>ALLOWED_ORIGINS</code>, <code>PORT</code>. Sleeps when idle; SQLite re-seeds on restart.</p></div>
+      <div class="tile" style="--c:var(--ext)"><b>OpenAI API</b><p>Not free. Set a spending limit. Key lives only in host env vars.</p></div>
+    </div>
+    <h3 style="margin-top:18px">Stack</h3>
+    <div class="tags" style="margin-top:0">
+      <span>Python 3.11</span><span>FastAPI</span><span>Pydantic v2</span><span>SQLAlchemy 2</span><span>Alembic</span><span>SQLite</span><span>OpenAI SDK</span>
+      <span>React</span><span>Vite</span><span>TypeScript</span><span>pytest</span><span>ruff</span><span>Docker + compose</span><span>nginx</span><span>GitHub Actions</span>
+    </div>
+  </section>
+
+  <footer>Engineering Knowledge Agent · architecture board</footer>
+</main>
+
+<script>
+/* ---------- ER diagram built from data so it stays easy to edit ---------- */
+(function(){
+  const ents = {
+    test_cases:        {x:20,  y:30,  c:'--svc',   f:[['PK','id','TC-###'],['FK','requirement_id','→ requirements'],['','title',''],['','steps',''],['','expected_result',''],['','status','enum']]},
+    requirements:      {x:270, y:30,  c:'--ui',    f:[['PK','id','REQ-###'],['','title',''],['','description',''],['','priority','enum'],['','status','enum'],['','version','int'],['','created_at',''],['','updated_at','']]},
+    requirement_risks: {x:520, y:30,  c:'--agent', f:[['PK FK','requirement_id',''],['PK FK','risk_id','']]},
+    risk_items:        {x:770, y:30,  c:'--dom',   f:[['PK','id','RISK-###'],['','title',''],['','description',''],['','severity','1-5'],['','likelihood','1-5'],['','status','enum']]},
+    pending_changes:   {x:270, y:300, c:'--ext',   f:[['PK','id',''],['','entity_type',''],['','entity_id',''],['','proposed_patch','JSON'],['','base_version','int'],['','proposed_by','agent|user'],['','status','enum']]},
+    audit_log:         {x:520, y:300, c:'--data',  f:[['PK','id',''],['','ts',''],['','actor',''],['','source','ui|agent|system'],['','entity_type / id',''],['','action',''],['','old / new_value','JSON'],['','request_id','']]}
+  };
+  const W=210,H=26,R=20,svg=document.getElementById('er');
+  const ns='http://www.w3.org/2000/svg';
+  const el=(t,a,p)=>{const e=document.createElementNS(ns,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
+  const txt=(p,x,y,s,cls,anchor)=>{const t=el('text',{x,y,class:cls||'t-sub','text-anchor':anchor||'start'},p);t.textContent=s;return t};
+  const defs=el('defs',{});const m=el('marker',{id:'er-a',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:6,markerHeight:6,orient:'auto'},defs);
+  el('path',{d:'M0 0L10 5L0 10z',fill:'var(--ink-3)'},m);
+  for(const [name,e] of Object.entries(ents)){
+    e.h=H+e.f.length*R+10;
+    const g=el('g',{class:'node',style:'--c:var('+e.c+')'});
+    el('rect',{x:e.x,y:e.y,width:W,height:e.h,rx:10},g);
+    el('path',{d:`M${e.x} ${e.y+H}V${e.y+10}a10 10 0 0 1 10-10H${e.x+W-10}a10 10 0 0 1 10 10V${e.y+H}z`,class:'bar'},g);
+    const h=txt(g,e.x+12,e.y+18,name,'t-title');h.style.fill='#fff';
+    e.f.forEach((r,i)=>{
+      const y=e.y+H+8+(i+1)*R-6;
+      if(r[0]){const k=txt(g,e.x+10,y,r[0],'t-sub');k.style.fontWeight=700;k.style.fill='var(--c)';k.style.fontSize='10.5px'}
+      txt(g,e.x+(r[0].length>2?50:34),y,r[1],'t-sub').style.fill='var(--ink)';
+      if(r[2])txt(g,e.x+W-10,y,r[2],'t-sub','end');
+    });
+  }
+  const rowY=(n,i)=>ents[n].y+H+8+(i+1)*R-10;
+  const line=(d,dash)=>el('path',{d,class:'edge'+(dash?' dash':''),'marker-end':dash?'':'','stroke-linecap':'round'});
+  const lab=(x,y,s)=>txt(svg,x,y,s,'edge-label','middle');
+  // requirements 1 -- N test_cases
+  line(`M270 ${rowY('requirements',0)}H230`);lab(250,rowY('requirements',0)-7,'1');lab(240,rowY('test_cases',1)+22,'N');
+  line(`M230 ${rowY('test_cases',1)}H230`);
+  // requirements 1 -- N requirement_risks
+  line(`M480 ${rowY('requirements',0)}H520`);lab(500,rowY('requirements',0)-7,'1');
+  // risk_items 1 -- N requirement_risks
+  line(`M770 ${rowY('risk_items',0)}H730`);lab(750,rowY('risk_items',0)-7,'1');lab(750,rowY('requirement_risks',1)+22,'');
+  // N markers
+  lab(500,rowY('requirement_risks',1)+4,'N');lab(750,rowY('requirement_risks',1)+4,'N');
+  // dashed loose refs to requirements
+  line(`M375 300V${ents.requirements.y+ents.requirements.h}`,true);
+  line(`M625 300V250H430V${ents.requirements.y+ents.requirements.h}`,true);
+  txt(svg,385,282,'entity_type + entity_id','edge-label');
+  txt(svg,640,282,'logs any entity','edge-label');
+  // helper note
+  const n=el('g',{});txt(n,20,330,'How to read this','t-title');
+  ['Each card is a table.','Header colour = its role.','PK primary key, FK foreign key.','Solid line: enforced FK.','Dashed: loose reference,','so audit history survives.'].forEach((s,i)=>txt(n,20,352+i*18,s,'t-sub'));
+})();
+
+/* ---------- Active section highlight in the nav ---------- */
+(function(){
+  const links=[...document.querySelectorAll('nav a')];
+  const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('on'));const a=map.get(e.target.id);if(a)a.classList.add('on')}})
+  },{rootMargin:'-30% 0px -60% 0px'});
+  document.querySelectorAll('main section[id]').forEach(s=>io.observe(s));
+})();
+
+/* ---------- Theme toggle (remembered if storage is available) ---------- */
+(function(){
+  const root=document.documentElement,btn=document.getElementById('theme');
+  try{const s=localStorage.getItem('theme');if(s)root.setAttribute('data-theme',s)}catch(e){}
+  btn.addEventListener('click',()=>{
+    const dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);
+    const next=dark?'light':'dark';root.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next)}catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{
+  "_note": "Each row below must be REJECTED by the seed validator (see _reason).",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "title": "Duplicate id",
+      "description": "x",
+      "priority": "high",
+      "status": "draft",
+      "_reason": "duplicate ID"
+    },
+    {
+      "id": "R-16",
+      "title": "Bad id format",
+      "description": "x",
+      "priority": "high",
+      "status": "draft",
+      "_reason": "ID format"
+    },
+    {
+      "id": "REQ-016",
+      "title": "",
+      "description": "x",
+      "priority": "high",
+      "status": "draft",
+      "_reason": "empty required field"
+    },
+    {
+      "id": "REQ-017",
+      "title": "Bad priority",
+      "description": "x",
+      "priority": "urgent",
+      "status": "draft",
+      "_reason": "invalid enum value"
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC-031",
+      "requirement_id": "REQ-099",
+      "title": "Orphan",
+      "steps": "x",
+      "expected_result": "x",
+      "status": "not_run",
+      "_reason": "references unknown requirement"
+    }
+  ],
+  "risk_items": [
+    {
+      "id": "RISK-013",
+      "title": "Out of range",
+      "description": "x",
+      "severity": 9,
+      "likelihood": 2,
+      "status": "open",
+      "_reason": "severity must be 1-5"
+    }
+  ],
+  "requirement_risks": [
+    {
+      "requirement_id": "REQ-001",
+      "risk_id": "RISK-999",
+      "_reason": "references unknown risk"
+    }
+  ]
+}

@@ -1,0 +1,515 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "title": "Start charging session on authenticated connection",
+      "description": "The station shall start a charging session only after the vehicle is connected and the user is authenticated.",
+      "priority": "critical",
+      "status": "verified"
+    },
+    {
+      "id": "REQ-002",
+      "title": "Stop charging on emergency stop",
+      "description": "Pressing the emergency stop shall cut power to the connector within 100 ms.",
+      "priority": "critical",
+      "status": "verified"
+    },
+    {
+      "id": "REQ-003",
+      "title": "Detect ground fault",
+      "description": "The station shall detect ground fault current above 20 mA DC and open the contactor.",
+      "priority": "critical",
+      "status": "implemented"
+    },
+    {
+      "id": "REQ-004",
+      "title": "Over-temperature derating",
+      "description": "If connector temperature exceeds 85 C the charging current shall be reduced by 50 percent.",
+      "priority": "high",
+      "status": "implemented"
+    },
+    {
+      "id": "REQ-005",
+      "title": "RFID card authentication",
+      "description": "The station shall authenticate users via ISO 14443 RFID cards within 2 seconds.",
+      "priority": "high",
+      "status": "verified"
+    },
+    {
+      "id": "REQ-006",
+      "title": "Display charging status",
+      "description": "The display shall show state of charge, power in kW and elapsed time, refreshed every second.",
+      "priority": "medium",
+      "status": "implemented"
+    },
+    {
+      "id": "REQ-007",
+      "title": "Backend connectivity via OCPP 1.6",
+      "description": "The station shall communicate with the central backend using OCPP 1.6 JSON over WebSocket.",
+      "priority": "high",
+      "status": "approved"
+    },
+    {
+      "id": "REQ-008",
+      "title": "Offline charging fallback",
+      "description": "If backend connectivity is lost, the station shall continue authorised sessions for up to 24 hours.",
+      "priority": "high",
+      "status": "approved"
+    },
+    {
+      "id": "REQ-009",
+      "title": "Energy metering accuracy",
+      "description": "Energy measurement shall be accurate to within 1 percent of the delivered kWh.",
+      "priority": "critical",
+      "status": "implemented"
+    },
+    {
+      "id": "REQ-010",
+      "title": "Firmware over-the-air update",
+      "description": "The station shall support signed firmware updates over the air with rollback on failure.",
+      "priority": "high",
+      "status": "approved"
+    },
+    {
+      "id": "REQ-011",
+      "title": "Audit log of sessions",
+      "description": "Every charging session shall be recorded with start, stop, energy and user identifier.",
+      "priority": "medium",
+      "status": "implemented"
+    },
+    {
+      "id": "REQ-012",
+      "title": "Load management across stations",
+      "description": "Total site current shall not exceed the configured grid limit by dynamically sharing power.",
+      "priority": "high",
+      "status": "approved"
+    },
+    {
+      "id": "REQ-013",
+      "title": "User app remote start",
+      "description": "Users shall be able to start a session remotely from a mobile app.",
+      "priority": "medium",
+      "status": "draft"
+    },
+    {
+      "id": "REQ-014",
+      "title": "Tamper detection",
+      "description": "The station shall raise an alarm when the enclosure is opened without authorisation.",
+      "priority": "high",
+      "status": "draft"
+    },
+    {
+      "id": "REQ-015",
+      "title": "Legacy payment terminal support",
+      "description": "The station shall support the legacy serial payment terminal.",
+      "priority": "low",
+      "status": "obsolete"
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "requirement_id": "REQ-001",
+      "title": "Charge with valid card and connected vehicle",
+      "steps": "1. Connect vehicle. 2. Present valid RFID card.",
+      "expected_result": "Session starts and power is delivered.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-002",
+      "requirement_id": "REQ-001",
+      "title": "Reject start without authentication",
+      "steps": "1. Connect vehicle. 2. Do not present card.",
+      "expected_result": "No power delivered; display asks for card.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-003",
+      "requirement_id": "REQ-001",
+      "title": "Reject start without vehicle",
+      "steps": "1. Present valid card with no vehicle connected.",
+      "expected_result": "Session does not start.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-004",
+      "requirement_id": "REQ-002",
+      "title": "Emergency stop during charging",
+      "steps": "1. Start session at full current. 2. Press emergency stop.",
+      "expected_result": "Power cut within 100 ms.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-005",
+      "requirement_id": "REQ-002",
+      "title": "Emergency stop latch",
+      "steps": "1. Press emergency stop. 2. Release it.",
+      "expected_result": "Station stays locked until manual reset.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-006",
+      "requirement_id": "REQ-003",
+      "title": "Inject 30 mA DC fault",
+      "steps": "1. Start session. 2. Inject 30 mA DC leakage.",
+      "expected_result": "Contactor opens and fault code E03 is shown.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-007",
+      "requirement_id": "REQ-003",
+      "title": "Inject 10 mA DC below threshold",
+      "steps": "1. Start session. 2. Inject 10 mA DC.",
+      "expected_result": "Session continues normally.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-008",
+      "requirement_id": "REQ-004",
+      "title": "Derate at 90 C connector temperature",
+      "steps": "1. Charge at 32 A. 2. Heat connector to 90 C.",
+      "expected_result": "Current reduced to 16 A.",
+      "status": "fail"
+    },
+    {
+      "id": "TC-009",
+      "requirement_id": "REQ-004",
+      "title": "No derating at 70 C",
+      "steps": "1. Charge at 32 A. 2. Hold connector at 70 C.",
+      "expected_result": "Current stays at 32 A.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-010",
+      "requirement_id": "REQ-005",
+      "title": "Card read time",
+      "steps": "1. Present valid card. 2. Measure response.",
+      "expected_result": "Authenticated in under 2 seconds.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-011",
+      "requirement_id": "REQ-005",
+      "title": "Unknown card rejected",
+      "steps": "1. Present unregistered card.",
+      "expected_result": "Authentication denied.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-012",
+      "requirement_id": "REQ-006",
+      "title": "Display update rate",
+      "steps": "1. Start session. 2. Observe display for 10 s.",
+      "expected_result": "Values refresh every second.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-013",
+      "requirement_id": "REQ-006",
+      "title": "Display during fault",
+      "steps": "1. Trigger ground fault.",
+      "expected_result": "Display shows fault instead of charge values.",
+      "status": "not_run"
+    },
+    {
+      "id": "TC-014",
+      "requirement_id": "REQ-007",
+      "title": "OCPP boot notification",
+      "steps": "1. Power on station with backend reachable.",
+      "expected_result": "BootNotification accepted by backend.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-015",
+      "requirement_id": "REQ-007",
+      "title": "OCPP heartbeat",
+      "steps": "1. Wait for configured heartbeat interval.",
+      "expected_result": "Heartbeat received by backend.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-016",
+      "requirement_id": "REQ-007",
+      "title": "OCPP reconnect after drop",
+      "steps": "1. Drop WebSocket. 2. Restore.",
+      "expected_result": "Station reconnects within 60 s.",
+      "status": "blocked"
+    },
+    {
+      "id": "TC-017",
+      "requirement_id": "REQ-008",
+      "title": "Offline session within 24 h",
+      "steps": "1. Disconnect backend. 2. Start authorised session.",
+      "expected_result": "Session works and is queued for upload.",
+      "status": "not_run"
+    },
+    {
+      "id": "TC-018",
+      "requirement_id": "REQ-008",
+      "title": "Offline session after 24 h",
+      "steps": "1. Disconnect backend for 25 h. 2. Try to start.",
+      "expected_result": "New sessions are refused.",
+      "status": "not_run"
+    },
+    {
+      "id": "TC-019",
+      "requirement_id": "REQ-009",
+      "title": "Meter accuracy at 7 kW",
+      "steps": "1. Charge at 7 kW against reference meter.",
+      "expected_result": "Deviation below 1 percent.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-020",
+      "requirement_id": "REQ-009",
+      "title": "Meter accuracy at 22 kW",
+      "steps": "1. Charge at 22 kW against reference meter.",
+      "expected_result": "Deviation below 1 percent.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-021",
+      "requirement_id": "REQ-009",
+      "title": "Meter accuracy at low current",
+      "steps": "1. Charge at 6 A against reference meter.",
+      "expected_result": "Deviation below 1 percent.",
+      "status": "fail"
+    },
+    {
+      "id": "TC-022",
+      "requirement_id": "REQ-010",
+      "title": "Valid signed firmware update",
+      "steps": "1. Push signed firmware package.",
+      "expected_result": "Station updates and reports new version.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-023",
+      "requirement_id": "REQ-010",
+      "title": "Unsigned firmware rejected",
+      "steps": "1. Push unsigned package.",
+      "expected_result": "Update rejected, version unchanged.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-024",
+      "requirement_id": "REQ-010",
+      "title": "Rollback on failed update",
+      "steps": "1. Push package that fails on boot.",
+      "expected_result": "Station rolls back to previous version.",
+      "status": "not_run"
+    },
+    {
+      "id": "TC-025",
+      "requirement_id": "REQ-011",
+      "title": "Session record created",
+      "steps": "1. Complete a session.",
+      "expected_result": "Record exists with start, stop, kWh and user ID.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-026",
+      "requirement_id": "REQ-011",
+      "title": "Records survive reboot",
+      "steps": "1. Complete session. 2. Reboot station.",
+      "expected_result": "Record still available.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-027",
+      "requirement_id": "REQ-001",
+      "title": "Session start timing",
+      "steps": "1. Connect and authenticate. 2. Measure time to power.",
+      "expected_result": "Power within 5 seconds.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-028",
+      "requirement_id": "REQ-003",
+      "title": "Fault after reset",
+      "steps": "1. Trigger fault. 2. Reset. 3. Start session.",
+      "expected_result": "Station charges normally after clearing fault.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-029",
+      "requirement_id": "REQ-002",
+      "title": "Emergency stop when idle",
+      "steps": "1. Press emergency stop with no session.",
+      "expected_result": "Station enters locked state.",
+      "status": "pass"
+    },
+    {
+      "id": "TC-030",
+      "requirement_id": "REQ-009",
+      "title": "Meter data retention",
+      "steps": "1. Record energy. 2. Power cycle.",
+      "expected_result": "Total energy register is unchanged.",
+      "status": "pass"
+    }
+  ],
+  "risk_items": [
+    {
+      "id": "RISK-001",
+      "title": "Electric shock from ground fault",
+      "description": "Undetected leakage current could injure users.",
+      "severity": 5,
+      "likelihood": 2,
+      "status": "mitigated"
+    },
+    {
+      "id": "RISK-002",
+      "title": "Fire from connector overheating",
+      "description": "Poor contact or derating failure could overheat the connector.",
+      "severity": 5,
+      "likelihood": 3,
+      "status": "open"
+    },
+    {
+      "id": "RISK-003",
+      "title": "Inaccurate billing",
+      "description": "Meter error causes customers to be over or under charged.",
+      "severity": 4,
+      "likelihood": 3,
+      "status": "open"
+    },
+    {
+      "id": "RISK-004",
+      "title": "Unauthorised charging",
+      "description": "Weak authentication allows free or fraudulent sessions.",
+      "severity": 3,
+      "likelihood": 3,
+      "status": "open"
+    },
+    {
+      "id": "RISK-005",
+      "title": "Malicious firmware",
+      "description": "An attacker installs unsigned firmware to take over the station.",
+      "severity": 5,
+      "likelihood": 2,
+      "status": "mitigated"
+    },
+    {
+      "id": "RISK-006",
+      "title": "Backend outage blocks all charging",
+      "description": "Station refuses sessions when the backend is unreachable.",
+      "severity": 3,
+      "likelihood": 4,
+      "status": "open"
+    },
+    {
+      "id": "RISK-007",
+      "title": "Grid overload at site",
+      "description": "Several stations draw more than the grid connection allows.",
+      "severity": 4,
+      "likelihood": 2,
+      "status": "open"
+    },
+    {
+      "id": "RISK-008",
+      "title": "Emergency stop failure",
+      "description": "Contactor welds closed and power is not cut.",
+      "severity": 5,
+      "likelihood": 1,
+      "status": "mitigated"
+    },
+    {
+      "id": "RISK-009",
+      "title": "Loss of session records",
+      "description": "Records lost on reboot cause disputes and compliance issues.",
+      "severity": 3,
+      "likelihood": 2,
+      "status": "mitigated"
+    },
+    {
+      "id": "RISK-010",
+      "title": "Vandalism or tampering",
+      "description": "Opened enclosure exposes live parts.",
+      "severity": 4,
+      "likelihood": 2,
+      "status": "open"
+    },
+    {
+      "id": "RISK-011",
+      "title": "Misleading display",
+      "description": "Wrong values shown cause user confusion.",
+      "severity": 2,
+      "likelihood": 3,
+      "status": "accepted"
+    },
+    {
+      "id": "RISK-012",
+      "title": "Obsolete terminal security hole",
+      "description": "Legacy serial terminal has known vulnerabilities.",
+      "severity": 2,
+      "likelihood": 2,
+      "status": "closed"
+    }
+  ],
+  "requirement_risks": [
+    {
+      "requirement_id": "REQ-001",
+      "risk_id": "RISK-004"
+    },
+    {
+      "requirement_id": "REQ-002",
+      "risk_id": "RISK-008"
+    },
+    {
+      "requirement_id": "REQ-002",
+      "risk_id": "RISK-001"
+    },
+    {
+      "requirement_id": "REQ-003",
+      "risk_id": "RISK-001"
+    },
+    {
+      "requirement_id": "REQ-003",
+      "risk_id": "RISK-002"
+    },
+    {
+      "requirement_id": "REQ-004",
+      "risk_id": "RISK-002"
+    },
+    {
+      "requirement_id": "REQ-005",
+      "risk_id": "RISK-004"
+    },
+    {
+      "requirement_id": "REQ-006",
+      "risk_id": "RISK-011"
+    },
+    {
+      "requirement_id": "REQ-007",
+      "risk_id": "RISK-006"
+    },
+    {
+      "requirement_id": "REQ-008",
+      "risk_id": "RISK-006"
+    },
+    {
+      "requirement_id": "REQ-009",
+      "risk_id": "RISK-003"
+    },
+    {
+      "requirement_id": "REQ-010",
+      "risk_id": "RISK-005"
+    },
+    {
+      "requirement_id": "REQ-011",
+      "risk_id": "RISK-009"
+    },
+    {
+      "requirement_id": "REQ-012",
+      "risk_id": "RISK-007"
+    },
+    {
+      "requirement_id": "REQ-014",
+      "risk_id": "RISK-010"
+    },
+    {
+      "requirement_id": "REQ-015",
+      "risk_id": "RISK-012"
+    }
+  ]
+}
