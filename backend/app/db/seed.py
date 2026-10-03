@@ -8,7 +8,6 @@ Run:  python -m app.db.seed [--file PATH] [--if-empty]
 
 import argparse
 import json
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -20,12 +19,9 @@ from sqlalchemy.orm import Session
 from app.db import models
 from app.db.session import SessionLocal
 from app.domain import enums
+from app.domain.ids import is_valid_id
 
 DEFAULT_FILE = Path(__file__).resolve().parents[2] / "data" / "seed_raw.json"
-
-REQ_ID = re.compile(r"^REQ-\d{3}$")
-TC_ID = re.compile(r"^TC-\d{3}$")
-RISK_ID = re.compile(r"^RISK-\d{3}$")
 
 
 def _one_of(value: str, allowed: tuple[str, ...], name: str) -> str:
@@ -50,7 +46,7 @@ class RequirementRow(BaseModel):
     @field_validator("id")
     @classmethod
     def _id(cls, v: str) -> str:
-        if not REQ_ID.match(v):
+        if not is_valid_id("requirement", v):
             raise ValueError(f"id must look like REQ-001, got {v!r}")
         return v
 
@@ -82,7 +78,7 @@ class TestCaseRow(BaseModel):
     @field_validator("id")
     @classmethod
     def _id(cls, v: str) -> str:
-        if not TC_ID.match(v):
+        if not is_valid_id("test_case", v):
             raise ValueError(f"id must look like TC-001, got {v!r}")
         return v
 
@@ -108,7 +104,7 @@ class RiskRow(BaseModel):
     @field_validator("id")
     @classmethod
     def _id(cls, v: str) -> str:
-        if not RISK_ID.match(v):
+        if not is_valid_id("risk", v):
             raise ValueError(f"id must look like RISK-001, got {v!r}")
         return v
 
