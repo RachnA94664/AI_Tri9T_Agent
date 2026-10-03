@@ -9,6 +9,7 @@ REQUIREMENT_STATUSES = ("draft", "approved", "implemented", "verified", "obsolet
 TEST_STATUSES = ("not_run", "pass", "fail", "blocked")
 RISK_STATUSES = ("open", "mitigated", "accepted", "closed")
 PENDING_STATUSES = ("pending", "applied", "rejected", "expired")
+RISK_LEVELS = ("low", "medium", "high")  # derived from severity x likelihood, never stored
 AUDIT_SOURCES = ("ui", "agent", "system")
 
 # ID formats, as SQLite GLOB patterns (used in CHECK constraints)
