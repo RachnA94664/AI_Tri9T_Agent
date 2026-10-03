@@ -90,3 +90,15 @@ def test_cannot_delete_requirement_that_has_test_cases(session, valid_seed):
     with pytest.raises(IntegrityError):
         session.execute(delete(models.Requirement).where(models.Requirement.id == "REQ-001"))
         session.commit()
+
+
+def test_loading_the_same_seed_twice_does_not_crash(session, valid_seed):
+    """Re-running the seed must report duplicates (including links), not raise."""
+    load_seed(session, valid_seed)
+
+    report = load_seed(session, valid_seed)
+
+    assert all(v == 0 for v in report.inserted.values())
+    assert any("duplicate link" in r for r in report.rejected)
+    assert count(session, models.Requirement) == 15
+    assert count(session, models.RequirementRisk) == 16

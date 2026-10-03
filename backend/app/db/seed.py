@@ -183,6 +183,12 @@ def load_seed(session: Session, data: dict[str, Any]) -> SeedReport:
     existing_req = set(session.scalars(select(models.Requirement.id)))
     existing_risk = set(session.scalars(select(models.RiskItem.id)))
     existing_tc = set(session.scalars(select(models.TestCase.id)))
+    existing_links = {
+        (r, k)
+        for r, k in session.execute(
+            select(models.RequirementRisk.requirement_id, models.RequirementRisk.risk_id)
+        )
+    }
 
     reqs = _drop_duplicates(
         _validate_rows(data.get("requirements", []), RequirementRow, "requirements", report),
@@ -215,7 +221,7 @@ def load_seed(session: Session, data: dict[str, Any]) -> SeedReport:
         else:
             valid_tcs.append(t)
 
-    valid_links, seen_links = [], set()
+    valid_links, seen_links = [], set(existing_links)
     for link in links:
         key = (link.requirement_id, link.risk_id)
         if link.requirement_id not in req_ids:
