@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_timeout_seconds: float = 30.0  # give up on a slow AI call
+    llm_max_output_tokens: int = 800  # cap on the length of any one AI answer
     database_url: str = "sqlite:///./knowledge.db"
     allowed_origins: str = "http://localhost:5173"
 
