@@ -9,15 +9,42 @@ from app.db.models import Requirement, TestCase
 
 
 def get(session: Session, requirement_id: str) -> Requirement | None:
+    """
+    Get a requirement by its ID.
+
+    Args:
+        session: The database session.
+        requirement_id: The ID of the requirement to get.
+
+    Returns:
+        The requirement if found, None otherwise.
+    """
     return session.get(Requirement, requirement_id)
 
 
 def list_all(session: Session) -> list[Requirement]:
+    """
+    List all requirements.
+
+    Args:
+        session: The database session.
+
+    Returns:
+        A list of all requirements.
+    """
     return list(session.scalars(select(Requirement).order_by(Requirement.id)))
 
 
 def list_without_tests(session: Session) -> list[Requirement]:
-    """Requirements that no test case points at."""
+    """
+    Requirements that no test case points at.
+
+    Args:
+        session: The database session.
+
+    Returns:
+        A list of requirements that no test case points at.
+    """
     has_tests = exists().where(TestCase.requirement_id == Requirement.id)
     return list(session.scalars(select(Requirement).where(~has_tests).order_by(Requirement.id)))
 
@@ -25,10 +52,20 @@ def list_without_tests(session: Session) -> list[Requirement]:
 def update_if_version(
     session: Session, requirement_id: str, base_version: int, values: dict
 ) -> bool:
-    """Optimistic locking: update only if nobody else changed the row meanwhile.
+    """
+    Optimistic locking: update only if nobody else changed the row meanwhile.
 
     The WHERE clause includes `version == base_version`. If another change got
     there first, no row matches and we return False.
+
+    Args:
+        session: The database session.
+        requirement_id: The ID of the requirement to update.
+        base_version: The base version of the requirement.
+        values: The values to update.
+
+    Returns:
+        True if the requirement was updated, False otherwise.
     """
     result = session.execute(
         update(Requirement)
