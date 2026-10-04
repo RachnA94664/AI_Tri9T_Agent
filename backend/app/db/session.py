@@ -10,7 +10,13 @@ from app.core.config import get_settings
 
 
 def make_engine(url: str | None = None) -> Engine:
-    engine = create_engine(url or get_settings().database_url)
+    url = url or get_settings().database_url
+    kwargs: dict = {}
+    if url.startswith("sqlite"):
+        # FastAPI handles each request in a worker thread. Each request gets its own
+        # session (and so its own connection use), so sharing the pool across threads is safe.
+        kwargs["connect_args"] = {"check_same_thread": False}
+    engine = create_engine(url, **kwargs)
 
     if engine.dialect.name == "sqlite":
         # SQLite ignores foreign keys unless this is switched on for EVERY

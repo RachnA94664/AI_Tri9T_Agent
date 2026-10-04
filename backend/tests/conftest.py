@@ -33,13 +33,40 @@ def migrated_template(tmp_path_factory) -> Path:
 
 
 @pytest.fixture
-def session(tmp_path, migrated_template) -> Session:
+def engine(tmp_path, migrated_template):
+    """A private copy of the migrated database for ONE test."""
     db_file = tmp_path / "test.db"
     shutil.copy(migrated_template, db_file)
-    engine = make_engine(f"sqlite:///{db_file}")
+    eng = make_engine(f"sqlite:///{db_file}")
+    yield eng
+    eng.dispose()
+
+
+@pytest.fixture
+def session(engine) -> Session:
     with sessionmaker(bind=engine, expire_on_commit=False)() as s:
         yield s
-    engine.dispose()
+
+
+@pytest.fixture
+def api(engine, valid_seed):
+    """A TestClient talking to the real app, backed by a seeded temporary database."""
+    from fastapi.testclient import TestClient
+
+    from app.db.session import get_session
+    from app.main import app
+
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with factory() as s:
+        load_seed(s, valid_seed)
+
+    def override_get_session():
+        with factory() as request_session:  # one session per request, like production
+            yield request_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
