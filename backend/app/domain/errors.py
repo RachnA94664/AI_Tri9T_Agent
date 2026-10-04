@@ -30,3 +30,9 @@ class NotFound(DomainError):
 
 class Conflict(DomainError):
     code = "conflict"
+
+
+class ServiceUnavailable(DomainError):
+    """An outside service (such as the AI provider) cannot be used right now."""
+
+    code = "service_unavailable"

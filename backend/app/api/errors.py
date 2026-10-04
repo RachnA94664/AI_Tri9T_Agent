@@ -11,7 +11,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.domain.errors import Conflict, DomainError, InvalidTransition, NotFound, ValidationError
+from app.domain.errors import (
+    Conflict,
+    DomainError,
+    InvalidTransition,
+    NotFound,
+    ServiceUnavailable,
+    ValidationError,
+)
 
 logger = logging.getLogger("app")
 
@@ -21,6 +28,7 @@ STATUS_BY_ERROR: dict[type[DomainError], int] = {
     ValidationError: 422,
     InvalidTransition: 409,  # the request clashes with the current state
     Conflict: 409,
+    ServiceUnavailable: 503,  # e.g. the AI provider is down or no API key is set
 }
 
 
