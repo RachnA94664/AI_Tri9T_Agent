@@ -102,6 +102,34 @@ class AuditOut(BaseModel):
     request_id: str | None
 
 
+class ChatIn(StrictIn):
+    message: str = Field(max_length=1000, examples=["Which requirements have no test cases?"])
+
+
+class ToolCallOut(BaseModel):
+    name: str
+    arguments: dict[str, Any]
+    ok: bool
+    error: str | None = None
+
+
+class PendingChangeOut(BaseModel):
+    change: ChangeOut
+    preview: dict[str, dict[str, Any]]
+
+
+class ChatOut(BaseModel):
+    answer: str
+    intent: str = Field(description="query, update, out_of_scope or refused")
+    grounded: bool = Field(description="True if the answer is backed by database results")
+    refused: bool = Field(description="True if the system declined to act")
+    records: list[dict[str, Any]] = Field(description="the database records behind the answer")
+    tool_calls: list[ToolCallOut] = Field(description="every tool the agent ran")
+    pending_changes: list[PendingChangeOut] = Field(
+        description="proposals saved by the Update Agent; nothing is applied until confirmed"
+    )
+
+
 class HealthOut(BaseModel):
     status: str
     database: str

@@ -11,6 +11,7 @@ from sqlalchemy import text
 from app.api.deps import SessionDep
 from app.api.errors import register_error_handlers
 from app.api.routes_changes import router as changes_router
+from app.api.routes_chat import router as chat_router
 from app.api.routes_read import router as read_router
 from app.api.schemas import HealthOut
 from app.core.config import get_settings
@@ -37,6 +38,7 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
     app.include_router(read_router)
     app.include_router(changes_router)
+    app.include_router(chat_router)
 
     @app.get("/health", response_model=HealthOut, tags=["system"])
     def health(session: SessionDep, response: Response):
