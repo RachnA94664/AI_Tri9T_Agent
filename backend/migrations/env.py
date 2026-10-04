@@ -44,6 +44,7 @@ def run_migrations_online() -> None:
         )
         with context.begin_transaction():
             context.run_migrations()
+    connectable.dispose()  # release the file so it can be copied or deleted on Windows
 
 
 if context.is_offline_mode():
