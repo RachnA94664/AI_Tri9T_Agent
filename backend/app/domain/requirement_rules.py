@@ -21,7 +21,7 @@ def validate_patch(current: dict, patch: object) -> dict:
         The fields that really change.
 
     Raises:
-        ValidationError: If the change is invalid.    
+        ValidationError: If the change is invalid.
     """
     if not isinstance(patch, dict) or not patch:
         raise ValidationError("a change must be a non-empty object of field values")

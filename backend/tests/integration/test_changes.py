@@ -15,10 +15,10 @@ ACT = {"actor": "rachna"}
 def audit_count(session) -> int:
     """
     Count the number of audit log entries.
-    
+
     Args:
         session: The database session.
-    
+
     Returns:
         The number of audit log entries.
     """
@@ -28,7 +28,7 @@ def audit_count(session) -> int:
 def requirement(session, req_id):
     """
     Get a requirement by its ID.
-    
+
     Args:
         session: The database session.
         req_id: The ID of the requirement to get.
@@ -43,7 +43,7 @@ def requirement(session, req_id):
 def test_propose_saves_a_pending_change_and_applies_nothing(seeded):
     """
     Test that proposing a change saves it as pending and applies nothing.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -58,7 +58,7 @@ def test_propose_saves_a_pending_change_and_applies_nothing(seeded):
 def test_propose_writes_an_audit_entry(seeded):
     """
     Test that proposing a change writes an audit entry.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -72,7 +72,7 @@ def test_propose_writes_an_audit_entry(seeded):
 def test_invalid_transition_is_rejected_and_nothing_is_stored(seeded):
     """
     Test that an invalid transition is rejected and nothing is stored.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -97,7 +97,7 @@ def test_invalid_transition_is_rejected_and_nothing_is_stored(seeded):
 def test_bad_proposals_are_rejected(seeded, req_id, patch, error):
     """
     Test that bad proposals are rejected.
-    
+
     Args:
         seeded: The seeded database session.
         req_id: The ID of the requirement to change.
@@ -112,7 +112,7 @@ def test_bad_proposals_are_rejected(seeded, req_id, patch, error):
 def test_bad_actor_or_source_is_rejected(seeded):
     """
     Test that bad actor or source is rejected.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -130,7 +130,7 @@ def test_bad_actor_or_source_is_rejected(seeded):
 def test_confirm_applies_the_change_bumps_the_version_and_logs_it(seeded):
     """
     Test that confirming a change applies it, bumps the version, and logs it.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -151,7 +151,7 @@ def test_confirm_applies_the_change_bumps_the_version_and_logs_it(seeded):
 def test_confirming_twice_changes_nothing_the_second_time(seeded):
     """
     Test that confirming a change twice changes nothing the second time.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -171,7 +171,7 @@ def test_confirming_twice_changes_nothing_the_second_time(seeded):
 def test_stale_version_is_a_conflict_and_the_old_change_expires(seeded):
     """
     Test that a stale version is a conflict and the old change expires.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -191,7 +191,7 @@ def test_stale_version_is_a_conflict_and_the_old_change_expires(seeded):
 def test_failure_in_the_middle_rolls_everything_back(seeded, monkeypatch):
     """
     Test that a failure in the middle rolls everything back.
-    
+
     Args:
         seeded: The seeded database session.
         monkeypatch: The monkeypatch fixture.
@@ -220,7 +220,7 @@ def test_failure_in_the_middle_rolls_everything_back(seeded, monkeypatch):
 def test_confirm_unknown_change_is_not_found(seeded):
     """
     Test that an unknown change is not found.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -234,7 +234,7 @@ def test_confirm_unknown_change_is_not_found(seeded):
 def test_reject_closes_the_change_without_applying_it(seeded):
     """
     Test that rejecting a change closes it without applying it.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -253,7 +253,7 @@ def test_reject_closes_the_change_without_applying_it(seeded):
 def test_rejecting_twice_is_harmless(seeded):
     """
     Test that rejecting a change twice is harmless.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -267,7 +267,7 @@ def test_rejecting_twice_is_harmless(seeded):
 def test_cannot_reject_an_applied_change(seeded):
     """
     Test that an applied change cannot be rejected.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -285,7 +285,7 @@ def test_cannot_reject_an_applied_change(seeded):
 def test_audit_rows_cannot_be_updated(seeded):
     """
     Test that audit rows cannot be updated.
-    
+
     Args:
         seeded: The seeded database session.
     """
@@ -297,10 +297,10 @@ def test_audit_rows_cannot_be_updated(seeded):
     seeded.rollback()
 
 
-def test_audit_rows_cannot_be_deleted(seeded):  
+def test_audit_rows_cannot_be_deleted(seeded):
     """
     Test that audit rows cannot be deleted.
-    
+
     Args:
         seeded: The seeded database session.
     """

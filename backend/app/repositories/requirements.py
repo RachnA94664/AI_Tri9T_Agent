@@ -65,7 +65,7 @@ def update_if_version(
         values: The values to update.
 
     Returns:
-        True if the requirement was updated, False otherwise.   
+        True if the requirement was updated, False otherwise.
     """
     result = session.execute(
         update(Requirement)

@@ -26,18 +26,18 @@ ENTITY = "requirement"
 
 
 def _now() -> datetime:
-    """Get the current time in UTC."""  
+    """Get the current time in UTC."""
     return datetime.now(UTC)
 
 
 def _check_who(actor: object, source: object) -> None:
     """
     Check the actor and source.
-    
+
     Args:
         actor: The actor making the change.
         source: The source of the change.
-    """         
+    """
     if not isinstance(actor, str) or not actor.strip():
         raise ValidationError("actor must not be empty")
     if source not in enums.AUDIT_SOURCES:
@@ -45,8 +45,7 @@ def _check_who(actor: object, source: object) -> None:
 
 
 def _get_change(session: Session, change_id: int):
-
-    """Get a change by its ID."""   
+    """Get a change by its ID."""
     change = pending_repo.get(session, change_id)
     if change is None:
         raise NotFound(f"change {change_id} does not exist")
@@ -58,7 +57,7 @@ def propose_requirement_change(
 ) -> dict:
     """
     Validate a change and save it as pending. Changes NOTHING about the requirement.
-    
+
     Args:
         session: The database session.
         requirement_id: The ID of the requirement to change.
@@ -100,14 +99,14 @@ def propose_requirement_change(
 def _expire(session: Session, change, actor: str, source: str, reason: str) -> None:
     """
     Expire a change.
-    
+
     Args:
         session: The database session.
         change: The change to expire.
         actor: The actor making the change.
         source: The source of the change.
         reason: The reason for expiring the change.
-    """  
+    """
     with unit_of_work(session):
         change.status = "expired"
         change.resolved_at = _now()
@@ -176,13 +175,13 @@ def confirm_change(session: Session, change_id: int, *, actor: str, source: str 
 def reject_change(session: Session, change_id: int, *, actor: str, source: str = "ui") -> dict:
     """
     Close a pending change without applying it.
-    
+
     Args:
         session: The database session.
         change_id: The ID of the change to reject.
         actor: The actor making the change.
         source: The source of the change.
-    """  
+    """
     _check_who(actor, source)
     change = _get_change(session, change_id)
 
@@ -209,8 +208,8 @@ def reject_change(session: Session, change_id: int, *, actor: str, source: str =
 def list_pending_changes(session: Session) -> list[dict]:
     """
     List all pending changes.
-    
+
     Args:
         session: The database session.
-    """   
+    """
     return [change_to_dict(c) for c in pending_repo.list_by_status(session, "pending")]
